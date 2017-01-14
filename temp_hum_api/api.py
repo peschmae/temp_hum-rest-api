@@ -3,7 +3,6 @@ from flask_restful import Resource, Api, reqparse, abort
 from flaskext.mysql import MySQL
 from config import configure_app
 
-print(__name__)
 app = Flask(__name__)
 configure_app(app)
 api = Api(app)
@@ -67,6 +66,6 @@ api.add_resource(TemperatureHumidityList, '/temp-hum-list/')
 
 if __name__=='__main__':
     app.run(
-        host=app.config['host'],
-        port=app.config['port']
+        host=app.config['HOST'],
+        port=app.config['PORT']
     )
