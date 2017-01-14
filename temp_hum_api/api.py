@@ -1,7 +1,11 @@
 from flask import Flask, request
 from flask_restful import Resource, Api, reqparse, abort
+from flaskext.mysql import MySQL
 
 api = Api(app)
+
+mysql = MySQL()
+mysql.init_app(app)
 
 temperature = {}
 humidity = {}

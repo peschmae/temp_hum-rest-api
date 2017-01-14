@@ -12,6 +12,11 @@ class BaseConfig(object):
     LOGGING_LOCATION = 'temp_hum-api.log'
     LOGGING_LEVEL = logging.DEBUG
 
+    MYSQL_DATABASE_HOST = 'localhost'
+    MYSQL_DATABASE_USER = 'temp_hum'
+    MYSQL_DATABASE_PASSWORD = 'temp_hum'
+    MYSQL_DATABASE_DB = 'temp_hum'
+
 
 class DevelopmentConfig(BaseConfig):
     HOST = '10.112.10.15'
