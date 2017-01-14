@@ -14,6 +14,7 @@ class BaseConfig(object):
 
 
 class DevelopmentConfig(BaseConfig):
+    HOST = '10.112.10.15'
     DEBUG = True
     TESTING = False
 
@@ -28,6 +29,8 @@ class ProductionConfig(BaseConfig):
     TESTING = False
 
     LOGGING_LEVEL = logging.FATAL
+    HOST = '10.112.10.3'
+    PORT = 15001
 
 
 config = {

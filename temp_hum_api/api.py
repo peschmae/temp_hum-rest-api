@@ -1,17 +1,10 @@
 from flask import Flask, request
 from flask_restful import Resource, Api, reqparse, abort
 
-app = Flask(__name__)
 api = Api(app)
 
-temperature = {
-    1: 20.9,
-    2: 22.2
-}
-humidity = {
-    1: 40.5,
-    2: 30.9
-}
+temperature = {}
+humidity = {}
 
 
 def abort_if_record_doesnt_exist(record_id):
@@ -63,6 +56,3 @@ class TemperatureHumidityList(Resource):
 
 api.add_resource(TemperatureHumidity, '/temp-hum/<int:record_id>', endpoint='temp_hum')
 api.add_resource(TemperatureHumidityList, '/temp-hum-list/')
-
-if __name__ == '__main__':
-    app.run(debug=True)
