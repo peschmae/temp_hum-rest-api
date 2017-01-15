@@ -1,10 +1,7 @@
-drop table if exists temperature;
-create table temperature (
+drop table if exists temp_hum_records;
+create table temp_hum_records (
   id integer primary key auto_increment,
-  temp float not null
-);
-drop table if exists humidity;
-create table humidity (
-  id integer primary key auto_increment,
+  tstamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  temp float not null,
   hum float not null
 );

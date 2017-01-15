@@ -2,6 +2,7 @@ from flask import Flask, request
 from flask_restful import Resource, Api, reqparse, abort
 from flaskext.mysql import MySQL
 from config import configure_app
+import time
 
 app = Flask(__name__)
 configure_app(app)
@@ -14,16 +15,12 @@ def abort_if_record_doesnt_exist(record_id):
     try:
         db = mysql.connect()
         cursor = db.cursor()
-        cursor.execute('SELECT * FROM temperature WHERE id = {0}'.format(record_id))
-        temperature = cursor.fetchall()
-        cursor.execute('SELECT * FROM humidity WHERE id = {0}'.format(record_id))
-        humidity = cursor.fetchall()
+        cursor.execute('SELECT * FROM temp_hum_records WHERE id = {0}'.format(record_id))
+        record = cursor.fetchall()
     finally:
         db.close()
-    if len(temperature) != 1:
-        abort(404, message="Temperature record {} doesn't exist".format(record_id))
-    if len(humidity) != 1:
-        abort(404, message="Temperature record {} doesn't exist".format(record_id))
+    if len(record) != 1:
+        abort(404, message="Record {} doesn't exist".format(record_id))
 
 parser = reqparse.RequestParser()
 parser.add_argument('record_id', type=int, help='Record ID to fetch or update')
@@ -44,13 +41,17 @@ class TemperatureHumidity(Resource):
         try:
             db = mysql.connect()
             cursor = db.cursor()
-            cursor.execute('SELECT * FROM temperature')
-            temperatures = dict(cursor.fetchall())
-            cursor.execute('SELECT * FROM humidity')
-            humidities = dict(cursor.fetchall())
+            cursor.execute('SELECT * FROM temp_hum_records WHERE id = {0}'.format(record_id))
+            record = cursor.fetchone()
         finally:
             db.close()
-        return {record_id: [temperatures[record_id], humidities[record_id]]}
+        return {
+            record[0]: {
+                'timestamp': int(time.mktime(record[1].timetuple())),
+                'temp': record[2],
+                'hum': record[3]
+            }
+        }
 
     def put(self, record_id):
         args = parser.parse_args()
@@ -60,12 +61,11 @@ class TemperatureHumidity(Resource):
         try:
             db = mysql.connect()
             cursor = db.cursor()
-            cursor.execute('UPDATE temperature SET temp={0} WHERE id={1}'.format(temp, record_id))
-            cursor.execute('UPDATE humidity SET hum={0} WHERE id={1}'.format(hum, record_id))
+            cursor.execute('UPDATE temp_hum_records SET temp={0},hum={1} WHERE id={2}'.format(temp, hum, record_id))
             db.commit()
         finally:
             db.close()
-        return {record_id: [temp, hum]},201
+        return {record_id: {'temp': temp, 'hum': hum}}, 201
 
 
 class TemperatureHumidityList(Resource):
@@ -73,15 +73,20 @@ class TemperatureHumidityList(Resource):
         try:
             db = mysql.connect()
             cursor = db.cursor()
-            cursor.execute('SELECT * FROM temperature')
-            temperatures = dict(cursor.fetchall())
-            cursor.execute('SELECT * FROM humidity')
-            humidities = dict(cursor.fetchall())
+            cursor.execute('SELECT * FROM temp_hum_records')
+            records = {}
+            for sql_record in cursor:
+                records.update(
+                    {
+                        sql_record[0]: {
+                            'timestamp': int(time.mktime(sql_record[1].timetuple())),
+                            'temp': sql_record[2],
+                            'hum': sql_record[3]
+                        }
+                    }
+                )
         finally:
             db.close()
-        records = {}
-        for key,temp in temperatures.iteritems():
-            records.update({key: [temp, humidities[key]]})
         return records
 
     def post(self):
@@ -89,13 +94,12 @@ class TemperatureHumidityList(Resource):
         try:
             db = mysql.connect()
             cursor = db.cursor()
-            cursor.execute('INSERT INTO temperature(temp) VALUES ({0})'.format(args['temp']))
-            cursor.execute('INSERT INTO humidity(hum) VALUES ({0})'.format(args['hum']))
+            cursor.execute('INSERT INTO temp_hum_records(temp,hum) VALUES ({0},{1})'.format(args['temp'],args['hum']))
             record_id = db.insert_id()
             db.commit()
         finally:
             db.close()
-        return {record_id: [args['temp'], args['hum']]}, 201
+        return {record_id: {'temp': args['temp'], 'hum': args['hum']}}, 201
 
 api.add_resource(TemperatureHumidity, '/temp-hum/<int:record_id>', endpoint='temp_hum')
 api.add_resource(TemperatureHumidityList, '/temp-hum-list/')
