@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+{% block title %}Draw graphs{% endblock %}
+{% block page_title %}Temperature & Humidity Graphs{% endblock %}
+{% block body %}
+    <script>
+
+        d3.json('{{ baseurl }}/temp-hum-list/', function(data){
+            converted_data = [[],[]];
+            for (var i = 0; i < data.length; i++) {
+                converted_data[0][i] = {};
+                converted_data[0][i].value = data[i].temp;
+                converted_data[0][i].date = new Date(data[i].timestamp * 1000);
+
+                converted_data[1][i] = {};
+                converted_data[1][i].value = data[i].hum;
+                converted_data[1][i].date = new Date(data[i].timestamp * 1000);
+
+            }
+
+            MG.data_graphic({
+                title: "Temperature & Humidity",
+                data: converted_data,
+                width: 600,
+                height: 200,
+                right: 40,
+                target: '.result',
+                legend: ['Temperature','Humidity'],
+                legend_target: '.legend'
+            });
+        });
+
+    </script>
+    <div class="result"></div>
+    <div class="legend"></div>
+{% endblock %}

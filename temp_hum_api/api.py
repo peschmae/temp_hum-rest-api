@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, render_template
 from flask_restful import Resource, Api, reqparse, abort
 from flaskext.mysql import MySQL
 from config import configure_app
@@ -28,11 +28,9 @@ parser.add_argument('temp', type=float, help='Temperature measured by sensor')
 parser.add_argument('hum', type=float, help='Humidity measured by sensor')
 
 
-class HelloWorld(Resource):
-    def get(self):
-        return {'hello': 'world'}
-
-api.add_resource(HelloWorld, '/', '/hello')
+@app.route("/")
+def index():
+    return render_template('index.html', baseurl='http://{0}:{1}'.format(app.config['HOST'], app.config['PORT']))
 
 
 class TemperatureHumidity(Resource):
@@ -42,16 +40,16 @@ class TemperatureHumidity(Resource):
             db = mysql.connect()
             cursor = db.cursor()
             cursor.execute('SELECT * FROM temp_hum_records WHERE id = {0}'.format(record_id))
-            record = cursor.fetchone()
+            sql_record = cursor.fetchone()
+            record = []
+            record.insert(sql_record[0], {
+                'timestamp': int(time.mktime(sql_record[1].timetuple())),
+                'temp': sql_record[2],
+                'hum': sql_record[3]
+            })
         finally:
             db.close()
-        return {
-            record[0]: {
-                'timestamp': int(time.mktime(record[1].timetuple())),
-                'temp': record[2],
-                'hum': record[3]
-            }
-        }
+        return record
 
     def put(self, record_id):
         args = parser.parse_args()
@@ -65,7 +63,12 @@ class TemperatureHumidity(Resource):
             db.commit()
         finally:
             db.close()
-        return {record_id: {'temp': temp, 'hum': hum}}, 201
+        record = []
+        record.insert(record_id, {
+            'temp': temp,
+            'hum': hum
+        })
+        return record, 201
 
 
 class TemperatureHumidityList(Resource):
@@ -74,15 +77,14 @@ class TemperatureHumidityList(Resource):
             db = mysql.connect()
             cursor = db.cursor()
             cursor.execute('SELECT * FROM temp_hum_records')
-            records = {}
+            records = []
             for sql_record in cursor:
-                records.update(
+                records.insert(
+                    sql_record[0],
                     {
-                        sql_record[0]: {
-                            'timestamp': int(time.mktime(sql_record[1].timetuple())),
-                            'temp': sql_record[2],
-                            'hum': sql_record[3]
-                        }
+                        'timestamp': int(time.mktime(sql_record[1].timetuple())),
+                        'temp': sql_record[2],
+                        'hum': sql_record[3]
                     }
                 )
         finally:
@@ -99,12 +101,17 @@ class TemperatureHumidityList(Resource):
             db.commit()
         finally:
             db.close()
-        return {record_id: {'temp': args['temp'], 'hum': args['hum']}}, 201
+        record = []
+        record.insert(record_id, {
+            'temp': args['temp'],
+            'hum': args['hum']
+        })
+        return record, 201
 
 api.add_resource(TemperatureHumidity, '/temp-hum/<int:record_id>', endpoint='temp_hum')
 api.add_resource(TemperatureHumidityList, '/temp-hum-list/')
 
-if __name__=='__main__':
+if __name__ == '__main__':
     app.run(
         host=app.config['HOST'],
         port=app.config['PORT']
